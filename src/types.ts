@@ -4,7 +4,8 @@ export type LegalTextType =
   | "privacyPolicySocialMedia"
 
 export interface LegalText {
-  type: LegalTextType
+  // Die LegalText-Endpunkte liefern selbst kein `type`-Feld - daher optional.
+  type?: LegalTextType
   html_de: string
   html_en: string | null
   warnings: string | null

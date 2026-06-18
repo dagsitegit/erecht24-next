@@ -5,17 +5,16 @@ import type {
   LegalText,
   LegalTextType,
 } from "./types"
-import { decodeClient, encodeClientInput } from "./util"
+import {
+  decodeClient,
+  encodeClientInput,
+  legalTextTag,
+  parseJsonBody,
+} from "./util"
+
+export { ERECHT24_TAG_PREFIX, legalTextTag } from "./util"
 
 const API_BASE = "https://api.e-recht24.de/v2"
-
-/** Prefix used for Next.js cache tags, one tag per legal text type. */
-export const ERECHT24_TAG_PREFIX = "erecht24"
-
-/** Cache tag for a given legal text type (e.g. "erecht24:imprint"). */
-export function legalTextTag(type: LegalTextType): string {
-  return `${ERECHT24_TAG_PREFIX}:${type}`
-}
 
 function getApiKey(): string {
   const key = process.env.ERECHT24_API_KEY
@@ -59,8 +58,8 @@ async function request<T>(
       `eRecht24 ${init.method ?? "GET"} ${path} failed: ${res.status} ${body.slice(0, 200)}`,
     )
   }
-  // DELETE / testPush liefern bei Erfolg 204 / leeren Body.
-  return (body ? (JSON.parse(body) as T) : (undefined as T))
+  // Leerer Body (204 bei DELETE/testPush) -> undefined; ungültiges JSON -> klarer Fehler.
+  return parseJsonBody<T>(body) as T
 }
 
 const PATHS: Record<LegalTextType, string> = {
@@ -70,10 +69,10 @@ const PATHS: Record<LegalTextType, string> = {
 }
 
 /**
- * Rechtstext abrufen. Die Antwort wird im Next.js-Data-Cache gehalten (TTL via
- * `revalidate`, Default 24h) und mit einem Tag versehen - so invalidiert ein
- * Push (revalidateTag) den Text überall, wo er gerendert wird (auch z.B. im
- * Footer), nicht nur auf einer Route.
+ * Rechtstext abrufen. Die Antwort wird im Next.js-Data-Cache mit Tag gehalten
+ * (TTL via `revalidate`, Default 24h) - so invalidiert ein Push (revalidateTag)
+ * den Text überall, wo er gerendert wird (auch z.B. im Footer), nicht nur auf
+ * einer Route.
  */
 export async function getLegalText(
   type: LegalTextType,
@@ -102,10 +101,8 @@ export async function createClient(
 
 /** List the push clients registered for this project (max 3 per project). */
 export async function listClients(): Promise<ERecht24Client[]> {
-  const raw = await request<Array<Record<string, unknown>>>("/clients", {
-    method: "GET",
-  })
-  return (raw ?? []).map(decodeClient)
+  const raw = await request<unknown>("/clients", { method: "GET" })
+  return Array.isArray(raw) ? raw.map((c) => decodeClient(c)) : []
 }
 
 /** Delete a push client by id. */
@@ -115,5 +112,8 @@ export async function deleteClient(id: number): Promise<void> {
 
 /** Ask eRecht24 to send a test push to the registered webhook. */
 export async function triggerTestPush(id: number): Promise<void> {
-  await request<unknown>(`/clients/${id}/testPush`, { method: "POST" })
+  await request<unknown>(`/clients/${id}/testPush`, {
+    method: "POST",
+    body: JSON.stringify({ type: "ping" }),
+  })
 }

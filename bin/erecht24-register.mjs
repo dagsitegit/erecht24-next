@@ -44,7 +44,7 @@ function headers() {
 async function api(path, init = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
-    headers: { ...headers(), ...(init.headers || {}) },
+    headers: { ...(init.headers || {}), ...headers() },
   })
   const text = await res.text()
   if (!res.ok) {

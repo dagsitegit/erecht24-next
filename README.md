@@ -100,8 +100,8 @@ Das ausgegebene Secret als `ERECHT24_PUSH_SECRET` in die Server-Env eintragen un
 ## Gut zu wissen
 
 - **Max. 3 Push-Clients pro Projekt** (z.B. Production + Preview + Staging).
-- **snake_case**: `POST /clients` erwartet `push_uri`, `push_method`, `plugin_name`, `cms_version`, `author_mail` (die CLI erledigt das). Die Read-Endpunkte liefern dagegen `html_de`, `html_en`, `modified`.
-- **Sicherheit**: Das HTML stammt aus der eRecht24-API (vertrauenswürdige Quelle) und wird via `dangerouslySetInnerHTML` gerendert - hier ausschließlich Inhalte der offiziellen API einspeisen. Für Defense-in-Depth kannst du die Ausgabe zusätzlich durch einen HTML-Sanitizer schicken. Das Push-Secret wird konstant-zeitlich verglichen (ohne Längen-Leak).
+- **snake_case**: `POST /clients` erwartet `push_uri`, `push_method`, `cms`, `cms_version`, `plugin_name`, `author_mail` (die CLI erledigt das). Die Read-Endpunkte liefern dagegen `html_de`, `html_en`, `modified`.
+- **Sicherheit**: Das HTML stammt aus der eRecht24-API (vertrauenswürdige Quelle) und wird via `dangerouslySetInnerHTML` gerendert - hier ausschließlich Inhalte der offiziellen API einspeisen. Für Defense-in-Depth kannst du die Ausgabe zusätzlich durch einen HTML-Sanitizer schicken. Das Push-Secret wird konstant-zeitlich verglichen (ohne Prefix-Leak).
 - **Cache/Aktualisierung**: Der Text wird im Next.js-Data-Cache mit Tag gehalten (Default-TTL 24h). Ein Push invalidiert den Tag und damit den Text **überall**, wo er gerendert wird (auch im Footer), plus die jeweilige Route.
 - **Abmahnschutz**: Die Texte werden unverändert ausgeliefert; Wortlaut und Inhalt kommen 1:1 aus eRecht24.
 

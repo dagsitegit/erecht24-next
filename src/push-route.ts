@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server"
 import { revalidatePath, revalidateTag } from "next/cache"
-import { legalTextTag } from "./client"
-import { timingSafeEqual } from "./util"
-import type { LegalTextType, PushPayload } from "./types"
+import { decidePush } from "./push-core"
+import type { LegalTextType } from "./types"
 
 export interface PushRouteOptions {
   /**
@@ -45,9 +44,9 @@ export function createErecht24PushRoute(options: PushRouteOptions = {}) {
       )
     }
 
-    let payload: PushPayload
+    let payload: unknown
     try {
-      payload = (await req.json()) as PushPayload
+      payload = await req.json()
     } catch {
       return NextResponse.json(
         { code: 400, message: "Invalid JSON" },
@@ -55,53 +54,35 @@ export function createErecht24PushRoute(options: PushRouteOptions = {}) {
       )
     }
 
-    const secret = typeof payload?.erecht24_secret === "string" ? payload.erecht24_secret : ""
-    const type = payload?.erecht24_type
-    if (!secret || !type) {
-      return NextResponse.json(
-        { code: 422, message: "Missing required fields" },
-        { status: 422 },
-      )
+    const decision = decidePush(payload, expectedSecret, pathByType)
+    if (decision.action === "respond") {
+      return NextResponse.json(decision.body, { status: decision.status })
     }
 
-    if (!timingSafeEqual(secret, expectedSecret)) {
-      return NextResponse.json(
-        { code: 401, message: "Invalid secret" },
-        { status: 401 },
-      )
-    }
-
-    if (type === "ping") {
-      return NextResponse.json({ code: 200, message: "pong" })
-    }
-
-    const path = pathByType[type as LegalTextType]
-    if (!path) {
-      return NextResponse.json(
-        { code: 422, message: `Invalid type: ${type}` },
-        { status: 422 },
-      )
-    }
-
-    // Revalidation darf den Push nicht zum 500 machen: bei einem Fehler trotzdem
-    // 200 quittieren (sonst könnte eRecht24 den Push-Client deaktivieren), aber
-    // den Fehler loggen. Der Data-Cache ist ggf. trotzdem invalidiert.
+    // Revalidation darf den Push nicht zum 500 machen: bei Fehler trotzdem 200
+    // quittieren (sonst könnte eRecht24 den Push-Client deaktivieren), Fehler
+    // loggen. Der Data-Cache ist ggf. trotzdem invalidiert.
     try {
-      revalidateTag(legalTextTag(type as LegalTextType))
-      revalidatePath(path)
+      revalidateTag(decision.tag)
+      revalidatePath(decision.path)
     } catch (err) {
       console.error(
-        `[erecht24] revalidation failed for ${type}:`,
+        `[erecht24] revalidation failed for ${decision.type}:`,
         err instanceof Error ? err.message : String(err),
       )
       return NextResponse.json({
         code: 200,
         message: "received (revalidation deferred)",
-        type,
-        path,
+        type: decision.type,
+        path: decision.path,
       })
     }
 
-    return NextResponse.json({ code: 200, message: "revalidated", type, path })
+    return NextResponse.json({
+      code: 200,
+      message: "revalidated",
+      type: decision.type,
+      path: decision.path,
+    })
   }
 }
