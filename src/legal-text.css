@@ -1,0 +1,88 @@
+/*
+ * Neutral, themeable prose styling for the raw HTML that eRecht24 delivers.
+ * The eRecht24 markup has no classes, so we style descendant elements.
+ *
+ * Import it once and pass `className="erecht24-prose"` to <LegalText>:
+ *   import "@dagsite/erecht24-next/legal-text.css"
+ *
+ * Defaults inherit color/font from your page (currentColor / inherit), so it
+ * blends into any design. Override the .erecht24-prose rules to theme it.
+ */
+
+.erecht24-prose {
+  color: inherit;
+  line-height: 1.7;
+  max-width: 72ch;
+}
+
+.erecht24-prose h1,
+.erecht24-prose h2,
+.erecht24-prose h3,
+.erecht24-prose h4,
+.erecht24-prose h5,
+.erecht24-prose h6 {
+  font-weight: 700;
+  line-height: 1.2;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.erecht24-prose h1 {
+  font-size: 1.875rem;
+  line-height: 1.15;
+  margin-top: 0;
+}
+.erecht24-prose h2 { font-size: 1.5rem; }
+.erecht24-prose h3 { font-size: 1.25rem; }
+.erecht24-prose h4 { font-size: 1.125rem; }
+
+.erecht24-prose p,
+.erecht24-prose ul,
+.erecht24-prose ol,
+.erecht24-prose blockquote,
+.erecht24-prose table {
+  margin: 1rem 0;
+}
+
+.erecht24-prose ul,
+.erecht24-prose ol {
+  padding-left: 1.5rem;
+}
+.erecht24-prose ul { list-style: disc; }
+.erecht24-prose ol { list-style: decimal; }
+.erecht24-prose li { margin: 0.25rem 0; }
+
+.erecht24-prose a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.erecht24-prose strong { font-weight: 600; }
+.erecht24-prose em { font-style: italic; }
+
+.erecht24-prose hr {
+  border: 0;
+  border-top: 1px solid currentColor;
+  opacity: 0.2;
+  margin: 2rem 0;
+}
+
+.erecht24-prose blockquote {
+  border-left: 2px solid currentColor;
+  padding-left: 1rem;
+  opacity: 0.85;
+}
+
+.erecht24-prose table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.erecht24-prose th,
+.erecht24-prose td {
+  border: 1px solid currentColor;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+.erecht24-prose th { font-weight: 600; }
