@@ -13,11 +13,9 @@ export const metadata = {
 export default function ImpressumPage() {
   return (
     <main style={{ maxWidth: 760, margin: "0 auto", padding: "4rem 1.5rem" }}>
-      <LegalText
-        type="imprint"
-        className="erecht24-prose"
-        fallback={<p>Inhalt folgt in Kürze.</p>}
-      />
+      {/* Kein fallback bei Pflicht-Seiten: schlägt der Abruf fehl, behält Next.js
+          (ISR) die letzte gültige Seite, statt einen Platzhalter zu cachen. */}
+      <LegalText type="imprint" className="erecht24-prose" />
     </main>
   )
 }

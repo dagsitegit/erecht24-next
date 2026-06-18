@@ -51,17 +51,15 @@ export const metadata = {
 export default function Page() {
   return (
     <main>
-      <LegalText
-        type="imprint"
-        className="erecht24-prose"
-        fallback={<p>Inhalt folgt in Kürze.</p>}
-      />
+      <LegalText type="imprint" className="erecht24-prose" />
     </main>
   )
 }
 ```
 
 Hinweis: Das von eRecht24 gelieferte HTML enthält **bereits eine eigene `<h1>`** - setze keine zweite Überschrift drumherum (sonst doppelte H1, schlecht für SEO/Barrierefreiheit).
+
+Hinweis (Ausfallsicherheit): Für Pflicht-Seiten (Impressum, Datenschutz) **kein `fallback` setzen**. Schlägt der Abruf fehl, propagiert der Fehler - Next.js behält per ISR die zuletzt erfolgreich gerenderte Seite, statt einen Platzhalter zu cachen. `fallback` nur für unkritische Inhalte verwenden.
 
 ### 2) Push-Webhook
 
@@ -103,7 +101,8 @@ Das ausgegebene Secret als `ERECHT24_PUSH_SECRET` in die Server-Env eintragen un
 
 - **Max. 3 Push-Clients pro Projekt** (z.B. Production + Preview + Staging).
 - **snake_case**: `POST /clients` erwartet `push_uri`, `push_method`, `plugin_name`, `cms_version`, `author_mail` (die CLI erledigt das). Die Read-Endpunkte liefern dagegen `html_de`, `html_en`, `modified`.
-- **Sicherheit**: Das HTML stammt aus der eRecht24-API (vertrauenswürdige Quelle) und wird via `dangerouslySetInnerHTML` gerendert - hier ausschließlich Inhalte der offiziellen API einspeisen. Das Push-Secret wird konstant-zeitlich verglichen.
+- **Sicherheit**: Das HTML stammt aus der eRecht24-API (vertrauenswürdige Quelle) und wird via `dangerouslySetInnerHTML` gerendert - hier ausschließlich Inhalte der offiziellen API einspeisen. Für Defense-in-Depth kannst du die Ausgabe zusätzlich durch einen HTML-Sanitizer schicken. Das Push-Secret wird konstant-zeitlich verglichen (ohne Längen-Leak).
+- **Cache/Aktualisierung**: Der Text wird im Next.js-Data-Cache mit Tag gehalten (Default-TTL 24h). Ein Push invalidiert den Tag und damit den Text **überall**, wo er gerendert wird (auch im Footer), plus die jeweilige Route.
 - **Abmahnschutz**: Die Texte werden unverändert ausgeliefert; Wortlaut und Inhalt kommen 1:1 aus eRecht24.
 
 ## API

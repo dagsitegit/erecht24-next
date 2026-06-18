@@ -115,8 +115,14 @@ async function main() {
       await deleteClient(id)
     } else {
       const url = args[0]
-      if (!url.startsWith("http")) {
-        throw new Error("Push-URL muss mit http(s):// beginnen")
+      let parsed
+      try {
+        parsed = new URL(url)
+      } catch {
+        throw new Error("Ungültige Push-URL")
+      }
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        throw new Error("Push-URL muss http:// oder https:// sein")
       }
       await register(url)
     }
@@ -126,4 +132,7 @@ async function main() {
   }
 }
 
-void main()
+main().catch((err) => {
+  console.error(err instanceof Error ? err.message : String(err))
+  process.exit(1)
+})

@@ -5,6 +5,7 @@ import type {
   LegalText,
   LegalTextType,
 } from "./types"
+import { decodeClient, encodeClientInput } from "./util"
 
 const API_BASE = "https://api.e-recht24.de/v2"
 
@@ -28,7 +29,7 @@ function getPluginKey(): string {
   return key
 }
 
-function authHeaders(): HeadersInit {
+function authHeaders(): Record<string, string> {
   return {
     "Content-Type": "application/json",
     "eRecht24-api-key": getApiKey(),
@@ -37,7 +38,7 @@ function authHeaders(): HeadersInit {
 }
 
 type RequestInitWithNext = RequestInit & {
-  next?: { revalidate?: number; tags?: string[] }
+  next?: { revalidate?: number | false; tags?: string[] }
 }
 
 async function request<T>(
@@ -46,15 +47,20 @@ async function request<T>(
 ): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
-    headers: { ...authHeaders(), ...(init.headers || {}) },
+    // Auth-Header zuletzt mergen, damit Aufrufer sie nicht überschreiben können.
+    headers: {
+      ...(init.headers as Record<string, string> | undefined),
+      ...authHeaders(),
+    },
   })
+  const body = await res.text()
   if (!res.ok) {
-    const body = await res.text().catch(() => "")
     throw new Error(
-      `eRecht24 ${init.method ?? "GET"} ${path} failed: ${res.status} ${body}`,
+      `eRecht24 ${init.method ?? "GET"} ${path} failed: ${res.status} ${body.slice(0, 200)}`,
     )
   }
-  return (await res.json()) as T
+  // DELETE / testPush liefern bei Erfolg 204 / leeren Body.
+  return (body ? (JSON.parse(body) as T) : (undefined as T))
 }
 
 const PATHS: Record<LegalTextType, string> = {
@@ -63,27 +69,43 @@ const PATHS: Record<LegalTextType, string> = {
   privacyPolicySocialMedia: "/privacyPolicySocialMedia",
 }
 
-/** Pull a legal text. Tagged for on-demand revalidation via the push route. */
-export async function getLegalText(type: LegalTextType): Promise<LegalText> {
-  return request<LegalText>(PATHS[type], {
+/**
+ * Rechtstext abrufen. Die Antwort wird im Next.js-Data-Cache gehalten (TTL via
+ * `revalidate`, Default 24h) und mit einem Tag versehen - so invalidiert ein
+ * Push (revalidateTag) den Text überall, wo er gerendert wird (auch z.B. im
+ * Footer), nicht nur auf einer Route.
+ */
+export async function getLegalText(
+  type: LegalTextType,
+  opts: { revalidate?: number } = {},
+): Promise<LegalText> {
+  const text = await request<LegalText | undefined>(PATHS[type], {
     method: "GET",
-    next: { tags: [legalTextTag(type)] },
+    next: { revalidate: opts.revalidate ?? 86400, tags: [legalTextTag(type)] },
   })
+  if (!text || typeof text.html_de !== "string") {
+    throw new Error(`eRecht24 ${type}: unerwartete Antwort (html_de fehlt)`)
+  }
+  return text
 }
 
 /** Register a push client (webhook) for this project. */
 export async function createClient(
   input: CreateClientInput,
 ): Promise<ERecht24Client> {
-  return request<ERecht24Client>("/clients", {
+  const raw = await request<Record<string, unknown>>("/clients", {
     method: "POST",
-    body: JSON.stringify({ pushMethod: "POST", ...input }),
+    body: JSON.stringify(encodeClientInput(input)),
   })
+  return decodeClient(raw ?? {})
 }
 
 /** List the push clients registered for this project (max 3 per project). */
 export async function listClients(): Promise<ERecht24Client[]> {
-  return request<ERecht24Client[]>("/clients", { method: "GET" })
+  const raw = await request<Array<Record<string, unknown>>>("/clients", {
+    method: "GET",
+  })
+  return (raw ?? []).map(decodeClient)
 }
 
 /** Delete a push client by id. */

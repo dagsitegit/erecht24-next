@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { revalidatePath, revalidateTag } from "next/cache"
 import { legalTextTag } from "./client"
+import { timingSafeEqual } from "./util"
 import type { LegalTextType, PushPayload } from "./types"
 
 export interface PushRouteOptions {
@@ -18,19 +19,6 @@ const DEFAULT_PATHS: Record<LegalTextType, string> = {
   imprint: "/impressum",
   privacyPolicy: "/datenschutz",
   privacyPolicySocialMedia: "/datenschutz",
-}
-
-/**
- * Constant-time string comparison. Avoids leaking the secret length/contents
- * via timing, and works on the Edge runtime (no node:crypto dependency).
- */
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false
-  let mismatch = 0
-  for (let i = 0; i < a.length; i++) {
-    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i)
-  }
-  return mismatch === 0
 }
 
 /**
@@ -67,7 +55,8 @@ export function createErecht24PushRoute(options: PushRouteOptions = {}) {
       )
     }
 
-    const { erecht24_secret: secret, erecht24_type: type } = payload
+    const secret = typeof payload?.erecht24_secret === "string" ? payload.erecht24_secret : ""
+    const type = payload?.erecht24_type
     if (!secret || !type) {
       return NextResponse.json(
         { code: 422, message: "Missing required fields" },
@@ -94,8 +83,24 @@ export function createErecht24PushRoute(options: PushRouteOptions = {}) {
       )
     }
 
-    revalidateTag(legalTextTag(type as LegalTextType))
-    revalidatePath(path)
+    // Revalidation darf den Push nicht zum 500 machen: bei einem Fehler trotzdem
+    // 200 quittieren (sonst könnte eRecht24 den Push-Client deaktivieren), aber
+    // den Fehler loggen. Der Data-Cache ist ggf. trotzdem invalidiert.
+    try {
+      revalidateTag(legalTextTag(type as LegalTextType))
+      revalidatePath(path)
+    } catch (err) {
+      console.error(
+        `[erecht24] revalidation failed for ${type}:`,
+        err instanceof Error ? err.message : String(err),
+      )
+      return NextResponse.json({
+        code: 200,
+        message: "received (revalidation deferred)",
+        type,
+        path,
+      })
+    }
 
     return NextResponse.json({ code: 200, message: "revalidated", type, path })
   }

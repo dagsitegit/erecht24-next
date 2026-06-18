@@ -13,6 +13,9 @@
   ],
   "license": "MIT",
   "author": "DagSite (https://dagsite.com)",
+  "engines": {
+    "node": ">=18"
+  },
   "homepage": "https://github.com/dagsitegit/erecht24-next",
   "repository": {
     "type": "git",
@@ -41,6 +44,8 @@
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
+    "pretest": "tsup",
+    "test": "node --test",
     "prepublishOnly": "pnpm build"
   },
   "dependencies": {
