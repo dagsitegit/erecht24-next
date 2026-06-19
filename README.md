@@ -99,6 +99,8 @@ Das ausgegebene Secret als `ERECHT24_PUSH_SECRET` in die Server-Env eintragen un
 
 ## Gut zu wissen
 
+- **Server-seitig**: Das Paket nutzt einen `server-only`-Guard, damit die API-Keys nie in den Client-Bundle gelangen. In Server Components / Route Handlers importieren, nicht in `"use client"`-Dateien. Typen mit `import type { ... }` einbinden.
+- **Node >= 20.6** für das Registrier-Skript (nutzt `node --env-file`). Die Laufzeit-Teile (Pull/Push) laufen auch auf älteren Next.js-tauglichen Node-Versionen.
 - **Max. 3 Push-Clients pro Projekt** (z.B. Production + Preview + Staging).
 - **snake_case**: `POST /clients` erwartet `push_uri`, `push_method`, `cms`, `cms_version`, `plugin_name`, `author_mail` (die CLI erledigt das). Die Read-Endpunkte liefern dagegen `html_de`, `html_en`, `modified`.
 - **Sicherheit**: Das HTML stammt aus der eRecht24-API (vertrauenswürdige Quelle) und wird via `dangerouslySetInnerHTML` gerendert - hier ausschließlich Inhalte der offiziellen API einspeisen. Für Defense-in-Depth kannst du die Ausgabe zusätzlich durch einen HTML-Sanitizer schicken. Das Push-Secret wird konstant-zeitlich verglichen (ohne Prefix-Leak).

@@ -68,6 +68,7 @@ export function decodeClient(raw: Record<string, unknown>): ERecht24Client {
     id: Number(raw.id ?? raw.client_id ?? 0),
     secret: str(raw.secret ?? raw.push_secret),
     pushUri: str(raw.push_uri ?? raw.pushUri),
+    // eRecht24 unterstützt aktuell nur POST; Feld bewusst fix.
     pushMethod: "POST",
     cms: str(raw.cms),
     cmsVersion: str(raw.cms_version ?? raw.cmsVersion),

@@ -101,7 +101,12 @@ export async function createClient(
 
 /** List the push clients registered for this project (max 3 per project). */
 export async function listClients(): Promise<ERecht24Client[]> {
-  const raw = await request<unknown>("/clients", { method: "GET" })
+  // no-store: Management-Reads nie cachen (auf Next 14 wäre ein GET sonst per
+  // Default force-cache -> stale Client-Liste).
+  const raw = await request<unknown>("/clients", {
+    method: "GET",
+    cache: "no-store",
+  })
   return Array.isArray(raw) ? raw.map((c) => decodeClient(c)) : []
 }
 

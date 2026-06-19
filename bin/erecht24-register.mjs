@@ -55,7 +55,7 @@ async function api(path, init = {}) {
 
 async function listClients() {
   const clients = await api("/clients")
-  if (!clients || !clients.length) {
+  if (!Array.isArray(clients) || !clients.length) {
     console.log("Keine Clients registriert.")
     return
   }
@@ -83,10 +83,10 @@ async function register(pushUri) {
     plugin_name: process.env.ERECHT24_PLUGIN_NAME || "dagsite/erecht24-next",
     author_mail: process.env.ERECHT24_AUTHOR_MAIL || "dev@dagsite.com",
   }
-  const raw = await api("/clients", {
+  const raw = (await api("/clients", {
     method: "POST",
     body: JSON.stringify(body),
-  })
+  })) ?? {}
   const id = raw.id ?? raw.client_id
   const secret = raw.secret ?? raw.push_secret
   const url = raw.push_uri ?? raw.pushUri ?? pushUri
