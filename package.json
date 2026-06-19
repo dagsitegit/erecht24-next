@@ -1,0 +1,66 @@
+{
+  "name": "@dagsite/erecht24-next",
+  "version": "0.1.0",
+  "description": "eRecht24 Rechtstexte-API für Next.js (App Router): Auto-Sync von Impressum + Datenschutz via Pull + Push-Webhook.",
+  "keywords": [
+    "erecht24",
+    "rechtstexte",
+    "impressum",
+    "datenschutz",
+    "nextjs",
+    "dsgvo",
+    "legal"
+  ],
+  "license": "MIT",
+  "author": "DagSite (https://dagsite.com)",
+  "engines": {
+    "node": ">=20.6.0"
+  },
+  "homepage": "https://github.com/dagsitegit/erecht24-next",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dagsitegit/erecht24-next.git"
+  },
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./legal-text.css": "./src/legal-text.css"
+  },
+  "files": [
+    "dist",
+    "src/legal-text.css",
+    "README.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "erecht24-register": "./bin/erecht24-register.mjs"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "pretest": "tsup",
+    "test": "node --test",
+    "prepublishOnly": "pnpm build"
+  },
+  "dependencies": {
+    "server-only": "^0.0.1"
+  },
+  "peerDependencies": {
+    "next": ">=14",
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "next": "^15",
+    "react": "^19",
+    "tsup": "^8",
+    "typescript": "^5"
+  }
+}
