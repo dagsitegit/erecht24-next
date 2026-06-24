@@ -14,24 +14,31 @@ Auto-Sync der eRecht24-Rechtstexte (Impressum, Datenschutz, Datenschutz Social M
 ## Voraussetzungen
 
 - eRecht24-**Premium** mit gepflegten Texten im Projektmanager (liefert den **API-Key** pro Projekt).
-- Ein eRecht24-**Developer-/Plugin-Key** (über die Nutzungsvereinbarung mit eRecht24).
 - Next.js >= 14, React >= 18.
+
+Einen eigenen Developer-/Plugin-Key brauchst du **nicht** - der Plugin-Identifier ist im Paket eingebaut.
 
 ## Installation
 
 ```bash
-pnpm add @dagsite/erecht24-next
+npm install @dagsite/erecht24-next
+# oder: pnpm add @dagsite/erecht24-next
+# oder: yarn add @dagsite/erecht24-next
+# oder: bun add @dagsite/erecht24-next
 ```
 
-## ENV-Variablen (pro Projekt)
+## ENV-Variablen
+
+Du musst nur **einen** Wert setzen - den projektbezogenen API-Key:
 
 ```bash
-ERECHT24_API_KEY=        # Projekt-Key aus dem eRecht24-Projektmanager
-ERECHT24_PLUGIN_KEY=     # Developer-Key (ein Key für alle deine Integrationen)
-ERECHT24_PUSH_SECRET=    # wird nach dem Registrieren des Push-Clients gesetzt
+ERECHT24_API_KEY=        # Projekt-Key aus dem eRecht24-Projektmanager (pro Projekt)
 ```
 
-Keys gehören ausschließlich in die Server-Env (z.B. `.env.local`, Vercel Project Env), niemals in den Client-Bundle oder ins Repo.
+- `ERECHT24_PLUGIN_KEY` ist **nicht** nötig - der Plugin-Identifier ist im Paket eingebaut. Nur setzen, wenn du eine eigene Integration mit eigenem Developer-Key betreiben willst (Override).
+- `ERECHT24_PUSH_SECRET` musst du **nicht** manuell setzen - der `register`-Befehl (unten) erzeugt es und schreibt es automatisch in deine `.env.local`.
+
+Der API-Key gehört ausschließlich in die Server-Env (z.B. `.env.local`, Vercel Project Env), niemals in den Client-Bundle.
 
 ## Verwendung
 
@@ -61,6 +68,8 @@ Hinweis: Das von eRecht24 gelieferte HTML enthält **bereits eine eigene `<h1>`*
 
 Hinweis (Ausfallsicherheit): Für Pflicht-Seiten (Impressum, Datenschutz) **kein `fallback` setzen**. Schlägt der Abruf fehl, propagiert der Fehler - Next.js behält per ISR die zuletzt erfolgreich gerenderte Seite, statt einen Platzhalter zu cachen. `fallback` nur für unkritische Inhalte verwenden.
 
+Sprachversionen: Standard ist Deutsch. Für Englisch `<LegalText type="imprint" lang="en" />`. Liefert eRecht24 keine englische Version, fällt die Komponente automatisch auf Deutsch zurück. Beide Sprachen = einfach zwei `<LegalText>` rendern.
+
 ### 2) Push-Webhook
 
 ```ts
@@ -79,28 +88,22 @@ export const POST = createErecht24PushRoute()
 
 ### 3) Push-Client registrieren
 
-In die `package.json`:
-
-```json
-{
-  "scripts": {
-    "erecht24:register": "node --env-file=.env.local node_modules/@dagsite/erecht24-next/bin/erecht24-register.mjs"
-  }
-}
-```
+Die CLI kommt mit dem Paket - kein eigenes Script nötig. Im Projektverzeichnis (mit `ERECHT24_API_KEY` in `.env.local`):
 
 ```bash
-pnpm erecht24:register https://deine-domain.de/api/erecht24/push   # gibt das Secret aus
-pnpm erecht24:register --list
-pnpm erecht24:register --delete <id>
+npx erecht24-register https://deine-domain.de/api/erecht24/push   # registriert + speichert das Secret
+npx erecht24-register --list
+npx erecht24-register --delete <id>
 ```
 
-Das ausgegebene Secret als `ERECHT24_PUSH_SECRET` in die Server-Env eintragen und einmal neu deployen. Danach in eRecht24 "Push testen" - die Seite muss sich aktualisieren.
+Das Push-Secret wird automatisch als `ERECHT24_PUSH_SECRET` in `.env.local` geschrieben (`--no-write` schaltet das ab). Für Production denselben Wert zusätzlich in die Server-Env (z.B. Vercel) eintragen und einmal neu deployen. Danach in eRecht24 "Push testen" - die Seite muss sich aktualisieren.
+
+Die CLI lädt `.env.local` automatisch ab Node 20.12. Auf älteren Versionen vorher `export ERECHT24_API_KEY=...`.
 
 ## Gut zu wissen
 
 - **Server-seitig**: Das Paket nutzt einen `server-only`-Guard, damit die API-Keys nie in den Client-Bundle gelangen. In Server Components / Route Handlers importieren, nicht in `"use client"`-Dateien. Typen mit `import type { ... }` einbinden.
-- **Node >= 20.6** für das Registrier-Skript (nutzt `node --env-file`). Die Laufzeit-Teile (Pull/Push) laufen auch auf älteren Next.js-tauglichen Node-Versionen.
+- **CLI lädt `.env.local` automatisch** ab Node 20.12 (`process.loadEnvFile`). Auf älteren Node-Versionen die Variablen vorher exportieren. Die Laufzeit-Teile (Pull/Push) laufen auf jeder Next.js-tauglichen Node-Version.
 - **Max. 3 Push-Clients pro Projekt** (z.B. Production + Preview + Staging).
 - **snake_case**: `POST /clients` erwartet `push_uri`, `push_method`, `cms`, `cms_version`, `plugin_name`, `author_mail` (die CLI erledigt das). Die Read-Endpunkte liefern dagegen `html_de`, `html_en`, `modified`.
 - **Sicherheit**: Das HTML stammt aus der eRecht24-API (vertrauenswürdige Quelle) und wird via `dangerouslySetInnerHTML` gerendert - hier ausschließlich Inhalte der offiziellen API einspeisen. Für Defense-in-Depth kannst du die Ausgabe zusätzlich durch einen HTML-Sanitizer schicken. Das Push-Secret wird konstant-zeitlich verglichen (ohne Prefix-Leak).
@@ -111,7 +114,7 @@ Das ausgegebene Secret als `ERECHT24_PUSH_SECRET` in die Server-Env eintragen un
 
 - `getLegalText(type)`, `createClient`, `listClients`, `deleteClient`, `triggerTestPush`, `legalTextTag(type)`
 - `createErecht24PushRoute(options?)`
-- `<LegalText type fallback? className? />`
+- `<LegalText type lang? fallback? className? />`
 - Typen: `LegalTextData`, `LegalTextType`, `ERecht24Client`, `CreateClientInput`, `PushPayload`
 
 ## Beispiel

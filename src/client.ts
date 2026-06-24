@@ -22,10 +22,15 @@ function getApiKey(): string {
   return key
 }
 
+// Plugin-Identifier von @dagsite/erecht24-next. Das ist KEIN Geheimnis: eRecht24
+// erkennt darüber das Plugin, und jeder Nutzer des Pakets verwendet denselben
+// Key (so wie bei allen eRecht24-Plugins). Über ERECHT24_PLUGIN_KEY
+// überschreibbar, falls jemand eine eigene Integration mit eigenem Key betreibt.
+const DEFAULT_PLUGIN_KEY =
+  "MwusKrxNEPxHNTUuKQiwYv5vJQdwhfwbSCVo3DFChPvZNcwHsiiVHRpCX3X9nFSv"
+
 function getPluginKey(): string {
-  const key = process.env.ERECHT24_PLUGIN_KEY
-  if (!key) throw new Error("ERECHT24_PLUGIN_KEY is not set")
-  return key
+  return process.env.ERECHT24_PLUGIN_KEY || DEFAULT_PLUGIN_KEY
 }
 
 function authHeaders(): Record<string, string> {

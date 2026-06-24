@@ -6,6 +6,11 @@ export interface LegalTextProps {
   /** Which legal text to render. */
   type: LegalTextType
   /**
+   * Sprachversion. Default "de". Liefert eRecht24 die gewünschte Sprache nicht
+   * (z.B. `html_en` ist null), wird ohne Fehler auf Deutsch zurückgefallen.
+   */
+  lang?: "de" | "en"
+  /**
    * Optional fallback for fetch failures.
    *
    * IMPORTANT: for legally required pages (Impressum, Datenschutz) do NOT set
@@ -32,11 +37,26 @@ export interface LegalTextProps {
  * official eRecht24 API here. If you want defense-in-depth, wrap the output in
  * your own HTML sanitizer.
  */
-export async function LegalText({ type, fallback, className }: LegalTextProps) {
+export async function LegalText({
+  type,
+  lang = "de",
+  fallback,
+  className,
+}: LegalTextProps) {
   let html: string
   try {
     const text = await getLegalText(type)
-    html = text.html_de
+    const chosen = lang === "en" ? text.html_en : text.html_de
+    if (typeof chosen === "string") {
+      html = chosen
+    } else {
+      // Gewünschte Sprache nicht verfügbar -> auf Deutsch zurückfallen (kein
+      // Fehler). html_de ist von getLegalText garantiert vorhanden.
+      console.warn(
+        `[erecht24] ${type}: html_${lang} nicht verfügbar, Fallback auf html_de`,
+      )
+      html = text.html_de
+    }
   } catch (err) {
     if (fallback === undefined) {
       // Kein Platzhalter cachen: Fehler weiterreichen, damit ISR die letzte
