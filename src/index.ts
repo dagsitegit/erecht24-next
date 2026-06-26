@@ -15,7 +15,6 @@ export { LegalText } from "./legal-text"
 export type { LegalTextProps } from "./legal-text"
 
 export type {
-  LegalText as LegalTextData,
   LegalTextType,
   ERecht24Client,
   CreateClientInput,

@@ -37,30 +37,29 @@ export interface LegalTextProps {
  * official eRecht24 API here. If you want defense-in-depth, wrap the output in
  * your own HTML sanitizer.
  */
+async function fetchHtml(type: LegalTextType, lang: "de" | "en"): Promise<string> {
+  const text = await getLegalText(type)
+
+  if (lang === "de") return text.html_de
+  if (text.html_en !== null) return text.html_en
+
+  console.warn(`[erecht24] ${type}: html_en nicht verfügbar, Fallback auf html_de`)
+
+  return text.html_de
+}
+
 export async function LegalText({
   type,
   lang = "de",
   fallback,
   className,
 }: LegalTextProps) {
-  let html: string
   try {
-    const text = await getLegalText(type)
-    const chosen = lang === "en" ? text.html_en : text.html_de
-    if (typeof chosen === "string") {
-      html = chosen
-    } else {
-      // Gewünschte Sprache nicht verfügbar -> auf Deutsch zurückfallen (kein
-      // Fehler). html_de ist von getLegalText garantiert vorhanden.
-      console.warn(
-        `[erecht24] ${type}: html_${lang} nicht verfügbar, Fallback auf html_de`,
-      )
-      html = text.html_de
-    }
+    const html = await fetchHtml(type, lang)
+
+    return <div className={className} dangerouslySetInnerHTML={{ __html: html }} />
   } catch (err) {
     if (fallback === undefined) {
-      // Kein Platzhalter cachen: Fehler weiterreichen, damit ISR die letzte
-      // erfolgreich gerenderte (gültige) Seite behält.
       throw err
     }
     console.warn(
@@ -69,6 +68,4 @@ export async function LegalText({
     )
     return <>{fallback}</>
   }
-
-  return <div className={className} dangerouslySetInnerHTML={{ __html: html }} />
 }
