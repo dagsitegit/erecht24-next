@@ -115,7 +115,7 @@ Die CLI lädt `.env.local` automatisch ab Node 20.12. Auf älteren Versionen vor
 - `getLegalText(type)`, `createClient`, `listClients`, `deleteClient`, `triggerTestPush`, `legalTextTag(type)`
 - `createErecht24PushRoute(options?)`
 - `<LegalText type lang? fallback? className? />`
-- Typen: `LegalTextData`, `LegalTextType`, `ERecht24Client`, `CreateClientInput`, `PushPayload`
+- Typen: `LegalTextType`, `ERecht24Client`, `CreateClientInput`, `PushPayload`
 
 ## Beispiel
 
