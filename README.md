@@ -100,6 +100,26 @@ Das Push-Secret wird automatisch als `ERECHT24_PUSH_SECRET` in `.env.local` gesc
 
 Die CLI lädt `.env.local` automatisch ab Node 20.12. Auf älteren Versionen vorher `export ERECHT24_API_KEY=...`.
 
+## Wie der Sync funktioniert (Cache statt Datenbank)
+
+Klassische CMS-Plugins persistieren die Rechtstexte in einer Datenbank oder Datei und aktualisieren sie über einen "Neu laden"-Button in den Einstellungen. Headless Next.js-Sites haben weder Settings-UI noch eigene Datenbank - diese Rolle übernimmt hier der Framework-Cache:
+
+1. **Persistenz = Next.js Data Cache + ISR.** `getLegalText` holt den Text einmal und legt ihn mit Cache-Tag im Data Cache ab (auf Vercel überlebt dieser auch Deployments; self-hosted liegt er in `.next/cache`). Die Seiten werden statisch ausgeliefert - im Normalbetrieb trifft kein einziger Seitenaufruf die eRecht24-API.
+2. **Push = der "Neu laden"-Button, nur automatisch.** Ändert sich ein Text im Projekt-Manager, sendet eRecht24 einen Push an die feste Sync-Route (`/api/erecht24/push`, per `pathByType` konfigurierbar). Der Handler prüft das Secret und invalidiert gezielt Cache-Tag + Route (`revalidateTag` / `revalidatePath`) - der nächste Aufruf rendert mit dem frischen Text. Änderungen sind so binnen Sekunden live statt erst nach Cache-Ablauf.
+3. **TTL = Sicherheitsnetz.** Die 24h-Revalidierung ist nur der Fallback, falls ein Push verloren geht - nicht der primäre Update-Weg.
+
+Warum nicht einfach "gar nicht cachen"? Dann würde jeder Seitenaufruf die eRecht24-API treffen: langsamere Seiten, unnötige Last auf der API und ein Ausfall der API würde die Rechtsseiten mitreißen. Mit Cache + Push bleiben die Seiten schnell, die API-Last minimal und bei einer API-Störung bleibt der letzte gültige Text online.
+
+**Manueller Sync** (das Äquivalent zum Settings-Button): einfach die Push-Route selbst aufrufen -
+
+```bash
+curl -X POST https://deine-domain.de/api/erecht24/push \
+  -H "Content-Type: application/json" \
+  -d '{"erecht24_secret":"<ERECHT24_PUSH_SECRET>","erecht24_type":"imprint"}'
+```
+
+Der "Push testen"-Button im eRecht24-Projekt-Manager prüft die Erreichbarkeit der Route (Ping/Pong).
+
 ## Gut zu wissen
 
 - **Server-seitig**: Das Paket nutzt einen `server-only`-Guard, damit die API-Keys nie in den Client-Bundle gelangen. In Server Components / Route Handlers importieren, nicht in `"use client"`-Dateien. Typen mit `import type { ... }` einbinden.
