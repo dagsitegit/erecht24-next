@@ -1,3 +1,27 @@
 allowBuilds:
   esbuild: true
   sharp: false
+
+# Security-Overrides (Audit 2026-09-12). Dies ist eine VEROEFFENTLICHTE Bibliothek
+# (@dagsite/erecht24-next) - alles hier betrifft ausschliesslich unsere Bau-Kette, nicht
+# das, was Nutzer der Bibliothek bekommen: ausgeliefert wird nur `server-only`, next und
+# react kommen ueber peerDependencies vom einbindenden Projekt.
+# Gerade deshalb ist die Bau-Kette hier heikler als in einer Website: ein kompromittiertes
+# Bauwerkzeug vergiftet ein Paket, das wir an andere weitergeben.
+# Alle Untergrenzen mit ^ statt >= - ein offenes >= zieht die naechste Hauptversion.
+overrides:
+  # postcss: DREI Advisories derselben Kette (sourceMappingURL -> Datei-Read), jedes ein
+  # unvollstaendiger Fix des vorigen, plus GHSA-qx2v-qp2m-jg93 (XSS in der Ausgabe, <8.5.10).
+  #   GHSA-6g55-p6wh-862q  high    <=8.5.11  -> Fix 8.5.12
+  #   GHSA-r28c-9q8g-f849  high    <=8.5.17  -> Fix 8.5.18
+  #   GHSA-fxqj-rqcc-2cmp  medium  <=8.5.22  -> Fix 8.5.23
+  # Kommt ueber next (hier nur Werkzeug-Abhaengigkeit, ^15).
+  postcss: "^8.5.23"
+  # sharp <0.35.4: GHSA-g89c-p67h-r497 (geerbte libheif-Luecken) und die aelteren
+  # libvips-Luecken (<0.35.0). Kommt ueber next als optionale Abhaengigkeit; wird hier
+  # ohnehin nicht gebaut (allowBuilds sharp: false), der Riegel haelt trotzdem die
+  # gepatchte Serie im Baum.
+  sharp: "^0.35.4"
+  # esbuild >=0.27.3 <0.28.1: GHSA-g7r4-m6w7-qqqr (Datei-Lesen ueber den Entwicklungs-
+  # Server). Betrifft ausschliesslich Windows; kommt hier ueber tsup>bundle-require.
+  esbuild: "^0.28.1"
