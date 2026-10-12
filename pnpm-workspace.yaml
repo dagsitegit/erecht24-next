@@ -21,7 +21,11 @@ overrides:
   # libvips-Luecken (<0.35.0). Kommt ueber next als optionale Abhaengigkeit; wird hier
   # ohnehin nicht gebaut (allowBuilds sharp: false), der Riegel haelt trotzdem die
   # gepatchte Serie im Baum.
-  sharp: "^0.35.4"
+  # 2026-10-12: CVE-2026-96889 (geerbte librsvg-Luecke) <0.35.5 -> Untergrenze angehoben.
+  sharp: "^0.35.5"
   # esbuild >=0.27.3 <0.28.1: GHSA-g7r4-m6w7-qqqr (Datei-Lesen ueber den Entwicklungs-
   # Server). Betrifft ausschliesslich Windows; kommt hier ueber tsup>bundle-require.
   esbuild: "^0.28.1"
+  # source-map-js <1.2.2: Event-Loop-DoS ueber indizierte Source-Map-Abschnitte (2026-10-12).
+  # Kommt ueber postcss (next, tsup).
+  source-map-js: "^1.2.2"
